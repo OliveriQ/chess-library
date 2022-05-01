@@ -117,7 +117,7 @@ void printMove(Move move) {
  ==================================
 \**********************************/
 
-void Board::initializeLookupTables() {
+void Position::initializeLookupTables() {
     //initialize squares between table
     Bitboard sqs;
     for (Square sq1 = SQ_A1; sq1 <= SQ_H8; ++sq1) {
@@ -133,18 +133,18 @@ void Board::initializeLookupTables() {
     }
 }
 
-uint8_t Board::ply() {
+uint8_t Position::ply() {
     return halfMoveClock;
 }
 
-uint16_t Board::fullmoves() {
+uint16_t Position::fullmoves() {
     return fullMoveCounter * 0.5;
 }
 
 
 // Board constructor that takes in FEN string.
 // if no parameter given, set to default position
-Board::Board(std::string FEN) {
+Position::Position(std::string FEN) {
     // init lookup tables used for movegen
     initializeLookupTables();
 
@@ -163,7 +163,7 @@ Board::Board(std::string FEN) {
 }
 
 // parse FEN (Forsyth-Edwards Notation) string
-void Board::parseFEN(std::string FEN) {
+void Position::parseFEN(std::string FEN) {
     // reset board info
     memset(PiecesBB, 0ULL, sizeof(PiecesBB));
     memset(board, None, sizeof(board));
@@ -246,7 +246,7 @@ void Board::parseFEN(std::string FEN) {
 }
 
 // print the current board state
-void Board::print() {
+void Position::print() {
     std::cout << "\n";
     for (int rank = 7; rank >= 0; rank--) {
         for (int file = 0; file < 8; file++) {
@@ -271,23 +271,23 @@ void Board::print() {
     std::cout << "\n";
 }
 
-Piece Board::piece_at(Square sq){
+Piece Position::piece_at(Square sq){
     return board[sq];
 }
 
-PieceType Board::piece_type_at(Square sq){
+PieceType Position::piece_type_at(Square sq){
     return PieceType(board[sq]);
 }
 
 
 // place a piece on a particular square
-void Board::placePiece(Piece piece, Square sq) {
+void Position::placePiece(Piece piece, Square sq) {
     PiecesBB[piece] |= SQUARE_BB[sq];
     board[sq] = piece;
 }
 
 // remove a piece from a particular square
-void Board::removePiece(Piece piece, Square sq) {
+void Position::removePiece(Piece piece, Square sq) {
     PiecesBB[piece] &= ~SQUARE_BB[sq];
     board[sq] = None;
 }
@@ -299,35 +299,35 @@ void Board::removePiece(Piece piece, Square sq) {
 \**********************************/
 
 // Hyperbola Quintessence algorithm (for sliding pieces)
-Bitboard Board::hyp_quint(Square square, Bitboard occ, Bitboard mask) {
+Bitboard Position::hyp_quint(Square square, Bitboard occ, Bitboard mask) {
     return (((mask & occ) - SQUARE_BB[square] * 2) ^
         reverse(reverse(mask & occ) - reverse(SQUARE_BB[square]) * 2)) & mask;
 }
 
 // get absolute knight attacks from lookup table
-Bitboard Board::GetKnightAttacks(Square square) {
+Bitboard Position::GetKnightAttacks(Square square) {
     return KNIGHT_ATTACKS_TABLE[square];
 }
  
 // get bishop attacks using Hyperbola Quintessence
-Bitboard Board::GetBishopAttacks(Square square, Bitboard occ) {
+Bitboard Position::GetBishopAttacks(Square square, Bitboard occ) {
     return hyp_quint(square, occ, MASK_DIAGONAL[diagonal_of(square)]) |
            hyp_quint(square, occ, MASK_ANTI_DIAGONAL[anti_diagonal_of(square)]);
 }
  
 // get rook attacks using Hyperbola Quintessence
-Bitboard Board::GetRookAttacks(Square square, Bitboard occ) {
+Bitboard Position::GetRookAttacks(Square square, Bitboard occ) {
     return hyp_quint(square, occ, MASK_FILE[file_of(square)]) |
            hyp_quint(square, occ, MASK_RANK[rank_of(square)]);
 }
 
 // get queen attacks using Hyperbola Quintessence
-Bitboard Board::GetQueenAttacks(Square square, Bitboard occ) {
+Bitboard Position::GetQueenAttacks(Square square, Bitboard occ) {
     return GetBishopAttacks(square, occ) | GetRookAttacks(square, occ);
 }
 
 // get absolute king attacks from lookup table
-Bitboard Board::GetKingAttacks(Square square) {
+Bitboard Position::GetKingAttacks(Square square) {
     return KING_ATTACKS_TABLE[square];
 }
 
@@ -393,7 +393,7 @@ std::vector<PerftPosition> testPosition6 = {
 
 bool PerftTesting::RunTestOnPosition(std::vector<PerftPosition> positions, std::string fen) {
     auto t1 = std::chrono::high_resolution_clock::now();
-    board.parseFEN(fen);
+    pos.parseFEN(fen);
     for (PerftPosition position : positions) {
         uint64_t nodes = PerftTesting::Driver<White>(position.depth);
         if (nodes != position.nodes) {

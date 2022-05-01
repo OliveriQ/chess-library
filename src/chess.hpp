@@ -474,7 +474,7 @@ struct State {
         enpassantCopy(enpassantCopy), castlingRightsCopy(castlingRightsCopy), capturedPiece(capturedPieceCopy), halfmoves(halfmovesCopy) {}
 };
 
-class Board {
+class Position {
 private:
     // array of piece bitboards
     Bitboard PiecesBB[12];
@@ -543,7 +543,7 @@ public:
     template <Color c> bool isStalemate(); 
     // constructor for Board, take in a FEN string.
     // if no string is given, set board to default position
-    Board(std::string FEN=defaultFEN);
+    Position(std::string FEN=defaultFEN);
 
     // sets the internal board representation to the 
     // FEN (Forsyth-Edwards Notation) string given
@@ -632,7 +632,7 @@ private:
 };
 
 template <Color c> 
-void Board::makemove(Move& move){
+void Position::makemove(Move& move){
     Piece piece = makePiece<c>(move.piece());
 
     Square source = move.source();
@@ -741,7 +741,7 @@ void Board::makemove(Move& move){
 }
 
 template <Color c> 
-void Board::unmakemove(Move& move){
+void Position::unmakemove(Move& move){
     // Retrive important board information
     storeCount--;
     State safeState = storeInfo[storeCount];
@@ -811,12 +811,12 @@ void Board::unmakemove(Move& move){
 }
 
 template <Color c>
-bool Board::isCheck(){
+bool Position::isCheck(){
     return isSquareAttacked<c>(KingSq<c>());
 }
 
 template <Color c>
-bool Board::givesCheck(Move& move){
+bool Position::givesCheck(Move& move){
     makemove<c>(move);
     bool attacked = isSquareAttacked<c>(KingSq<c>());
     unmakemove<c>(move);
@@ -824,7 +824,7 @@ bool Board::givesCheck(Move& move){
 }
 
 template <Color c>
-bool Board::isCheckmate(){
+bool Position::isCheckmate(){
     if (isCheck<c>()){
         Moves movesList = generateLegalMoves<c>();
         if (movesList.count== 0)
@@ -834,7 +834,7 @@ bool Board::isCheckmate(){
 }
 
 template <Color c>
-bool Board::isStalemate(){
+bool Position::isStalemate(){
     if (isCheck<c>()){
         return false;
     }
@@ -847,7 +847,7 @@ bool Board::isStalemate(){
 }
 
 template <Color c> 
-bool Board::isSquareAttacked(Square sq) {
+bool Position::isSquareAttacked(Square sq) {
     if (sq != NO_SQ) {
         if (Pawns<c>()                   & GetPawnAttacks<~c>(sq))                                          return true;
         if (Knights<c>()                 & GetKnightAttacks(sq))                                            return true;
@@ -859,59 +859,59 @@ bool Board::isSquareAttacked(Square sq) {
 }
 
 template <Color c> 
-inline Square Board::KingSq(){
+inline Square Position::KingSq(){
     if constexpr (c==White) return bsf(Kings<White>());
     return bsf(Kings<Black>());
 }
 
 template <Color c> 
-constexpr Bitboard Board::allPieces(){
+constexpr Bitboard Position::allPieces(){
     return Pawns<c>() | Knights<c>() | Bishops<c>() | Rooks<c>() | Queens<c>() | Kings<c>();
 }
 
 template <Color c> 
-constexpr Bitboard Board::Pawns(){
+constexpr Bitboard Position::Pawns(){
     return PiecesBB[c * 6];
 }
 
 template <Color c> 
-constexpr Bitboard Board::Knights(){
+constexpr Bitboard Position::Knights(){
     return PiecesBB[c * 6 + Knight];
 }
 
 template <Color c> 
-constexpr Bitboard Board::Bishops(){
+constexpr Bitboard Position::Bishops(){
     return PiecesBB[c * 6 + Bishop];
 }
 
 template <Color c> 
-constexpr Bitboard Board::Rooks(){
+constexpr Bitboard Position::Rooks(){
     return PiecesBB[c * 6 + Rook];
 }
 
 template <Color c> 
-constexpr Bitboard Board::Queens(){
+constexpr Bitboard Position::Queens(){
     return PiecesBB[c * 6 + Queen];
 }
 
 template <Color c> 
-constexpr Bitboard Board::Kings(){
+constexpr Bitboard Position::Kings(){
     return PiecesBB[c * 6 + King];
 }
 
 template <Color c> 
-constexpr Bitboard Board::PieceBB(PieceType type) {
+constexpr Bitboard Position::PieceBB(PieceType type) {
     return PiecesBB[c * 6 + type];
 }
 
 template <Color c> 
-constexpr Bitboard Board::Enemy(){
+constexpr Bitboard Position::Enemy(){
     if constexpr (c==White) return allPieces<Black>();
     return allPieces<White>();
 }
 
 template <Color c> 
-constexpr Bitboard Board::EnemyEmpty(){
+constexpr Bitboard Position::EnemyEmpty(){
     if constexpr (c==White) return ~allPieces<White>();
     return ~allPieces<Black>();
 }
@@ -923,7 +923,7 @@ constexpr Bitboard Board::EnemyEmpty(){
 \**********************************/
 
 template <Color c> 
-inline Bitboard Board::doCheckmask(Square sq){
+inline Bitboard Position::doCheckmask(Square sq){
     Bitboard us = (c == White) ? occupancyWhite : occupancyBlack;
     Bitboard them = (c == White) ? occupancyBlack : occupancyWhite;
     Bitboard checks = 0ULL;
@@ -961,7 +961,7 @@ inline Bitboard Board::doCheckmask(Square sq){
 }
 
 template <Color c> 
-inline void Board::doPins(Square sq){
+inline void Position::doPins(Square sq){
     Bitboard us = (c == White) ? occupancyWhite : occupancyBlack;
     Bitboard them = (c == White) ? occupancyBlack : occupancyWhite;
     Bitboard rook_attack   = GetRookAttacks(sq, them);
@@ -990,7 +990,7 @@ inline void Board::doPins(Square sq){
 }
 
 template <Color c> 
-inline void Board::init(Square sq){
+inline void Position::init(Square sq){
     occupancyWhite = allPieces<White>();
     occupancyBlack = allPieces<Black>();
     occupancyAll   = occupancyWhite | occupancyBlack;
@@ -1001,18 +1001,18 @@ inline void Board::init(Square sq){
 
 // get Pawn push bitboard
 template <Color c>
-Bitboard Board::GetPawnPush(Square sq) {
+Bitboard Position::GetPawnPush(Square sq) {
     return (c == White) ? (SQUARE_BB[sq + 8]) : (SQUARE_BB[sq - 8]);
 }
 
 // get absolute pawn attacks from lookup table
 template <Color c>
-Bitboard Board::GetPawnAttacks(Square square) {
+Bitboard Position::GetPawnAttacks(Square square) {
     return PAWN_ATTACKS_TABLE[c][square];
 }
 
 template <Color c> 
-inline Bitboard Board::LegalPawnMoves(Square sq){
+inline Bitboard Position::LegalPawnMoves(Square sq){
     // Only king can move at double checks
     if (doubleCheck == 2) return 0ULL;
     Bitboard enemy = (c == White) ? occupancyBlack : occupancyWhite;
@@ -1049,7 +1049,7 @@ inline Bitboard Board::LegalPawnMoves(Square sq){
 }
 
 template <Color c> 
-inline Bitboard Board::LegalKnightMoves(Square sq){
+inline Bitboard Position::LegalKnightMoves(Square sq){
     // Only king can move at double checks
     if (doubleCheck == 2) return 0ULL;
     // Pinned Knights cannot move anywhere
@@ -1058,7 +1058,7 @@ inline Bitboard Board::LegalKnightMoves(Square sq){
 }
 
 template <Color c> 
-inline Bitboard Board::LegalBishopMoves(Square sq){
+inline Bitboard Position::LegalBishopMoves(Square sq){
     // Only king can move at double checks
     if (doubleCheck == 2) return 0ULL;
     // Horizontal/Vertical pinned Bishops cannot move anywhere
@@ -1070,7 +1070,7 @@ inline Bitboard Board::LegalBishopMoves(Square sq){
 }
 
 template <Color c> 
-inline Bitboard Board::LegalRookMoves(Square sq){
+inline Bitboard Position::LegalRookMoves(Square sq){
     // Only king can move at double checks
     if (doubleCheck == 2) return 0ULL;
     // Diagonal pinned Rooks cannot move anywhere
@@ -1082,7 +1082,7 @@ inline Bitboard Board::LegalRookMoves(Square sq){
 }
 
 template <Color c> 
-inline Bitboard Board::LegalQueenMoves(Square sq){
+inline Bitboard Position::LegalQueenMoves(Square sq){
     // Only king can move at double checks
     if (doubleCheck == 2) return 0ULL;
     // Queen moves are the union of the bishop and rook moves which are already check for legality
@@ -1090,7 +1090,7 @@ inline Bitboard Board::LegalQueenMoves(Square sq){
 }
 
 template <Color c> 
-inline Bitboard Board::LegalKingMoves(Square sq){
+inline Bitboard Position::LegalKingMoves(Square sq){
     Bitboard king_moves = GetKingAttacks(sq) & EnemyEmpty<c>();
     // A king with no empty/enemy squares can't move (aka blocked by his own pieces)
     if (!king_moves) return 0ULL;
@@ -1160,7 +1160,7 @@ inline Bitboard Board::LegalKingMoves(Square sq){
 
 // function that returns a Moves Struct that holds all legal moves
 template <Color c> 
-Moves Board::generateLegalMoves() {
+Moves Position::generateLegalMoves() {
     // init move list
     Moves moveList{};
     init<c>(KingSq<c>());
@@ -1268,11 +1268,11 @@ struct PerftPosition {
     fen(fen), nodes(nodes), depth(depth) {}
 };
 
-class PerftTesting{
+class PerftTesting {
     public:
         void RunPerftTest();
     private:
-        Board board;
+        Position pos;
         template<Color c>
         uint64_t Driver(int depth);
         bool RunTestOnPosition(std::vector<PerftPosition> positions, std::string fen);
@@ -1284,12 +1284,12 @@ uint64_t PerftTesting::Driver(int depth) {
         return 1;
     }
     uint64_t nodes = 0;
-    Moves moveList = board.generateLegalMoves<c>();
+    Moves moveList = pos.generateLegalMoves<c>();
     for (int i = 0; i < (int)moveList.count; i++) {
         Move move = moveList.moves[i];
-        board.makemove<c>(move);
+        pos.makemove<c>(move);
         nodes += Driver<~c>(depth - 1);
-        board.unmakemove<c>(move);
+        pos.unmakemove<c>(move);
     }
     return nodes;
 }
